@@ -1,0 +1,12 @@
+syntax: glob
+
+*~
+*.beam
+Mnesia.*
+sasl_err*
+erl_crash*
+ebin/*
+*.orig
+*.rej
+deps/*
+.eunit/*

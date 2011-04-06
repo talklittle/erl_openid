@@ -12,17 +12,17 @@
 -include("openid.hrl").
 
 %% API
--export([start_link/1]).
+-export([start_link/0, start_link/1, stop/0, stop/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
 -record(state, {
- authReqs,
- assocs,
- pending,
- nonces
+		authReqs,
+		assocs,
+		pending,
+		nonces
 }).
 
 % Ten-minute login timeout (milliseconds)
@@ -35,15 +35,26 @@
 %%====================================================================
 %% API
 %%====================================================================
-start_link(Name) ->
-    gen_server:start_link({local, Name}, ?MODULE, [], []).
+start_link() ->
+    start_link({global, ?MODULE}).
 
+start_link(Name) ->
+    gen_server:start_link(Name, ?MODULE, [], []).
+
+
+stop() ->
+    stop({global, ?MODULE}).
+
+
+stop(Name) ->
+    gen_server:handle_cast(Name, stop).
 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
 
 init(_Args) ->
+    ibrowse:start(),
     AuthReqs = ets:new(openid_authreqs, [set, private]),
     Assocs = ets:new(openid_assocs, [set, private]),
     Pending = ets:new(openid_pending, [set, private]),
@@ -75,6 +86,9 @@ handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
+
+handle_cast(stop, State) ->
+    {stop, normal, State};
 
 handle_cast(_Msg, State) ->
     {noreply, State}.

@@ -7,9 +7,60 @@
 %%%-------------------------------------------------------------------
 -module(openid).
 
--export([discover/1, associate/1, authentication_url/3]).
+-export([
+	start/2, stop/1, init/1, start_link/1,
+	prepare/2, prepare/3, verify/3,
+	discover/1, associate/1, authentication_url/3
+    ]).
+
+-behaviour(application).
+-behaviour(supervisor).
 
 -include("openid.hrl").
+
+%% ------------------------------------------------------------
+%% Application
+%% ------------------------------------------------------------
+
+start(_, _) ->
+    start_link([]).
+
+stop(_) ->
+    ok.
+
+
+%% ------------------------------------------------------------
+%% Main supervisor
+%% ------------------------------------------------------------
+start_link(Args) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, Args).
+
+init(_Args) ->
+    {ok, {{one_for_one, 10, 10},
+	    [
+		{make_ref(),
+		    {openid_srv, start_link, []},
+		    permanent,
+		    10000,
+		    worker,
+		    [openid_srv]
+		}
+	    ]
+    }}.
+
+%%
+%% Intf to openid server
+%%
+prepare(UUID, Identifier) ->
+    gen_server:call({global, openid_srv}, {prepare, UUID, Identifier}).
+
+
+prepare(UUID, Identifier, Cache) ->
+    gen_server:call({global, openid_srv}, {prepare, UUID, Identifier, Cache}).
+
+ 
+verify(UUID, ReturnTo, Fields) ->
+    gen_server:call({global, openid_srv}, {verify, UUID, ReturnTo, Fields}).
 
 
 
@@ -151,32 +202,35 @@ associate(OpURL) ->
 
     ReqBody = openid_pm:url_encode(Params),
 
-    {ok, 200, _Headers, Body} = openid_http:post(OpURL, ?CONTENT_TYPE, ReqBody),
+    case openid_http:post(OpURL, ?CONTENT_TYPE, ReqBody) of
+	{ok, 200, _Headers, Body} ->
+	    Response = openid_pm:kvf_decode(Body),
 
-    Response = openid_pm:kvf_decode(Body),
+	    Handle = ?GV("assoc_handle", Response),
+	    ExpiresIn = list_to_integer(?GV("expires_in", Response)),
 
-    Handle = ?GV("assoc_handle", Response),
-    ExpiresIn = list_to_integer(?GV("expires_in", Response)),
-    
-    ServPublic = unroll(base64:decode(?GV("dh_server_public", Response))),
+	    ServPublic = unroll(base64:decode(?GV("dh_server_public", Response))),
 
-    %?DBG({serv_pub, ServPublic}),
+	    %?DBG({serv_pub, ServPublic}),
 
-    EncMAC = base64:decode(?GV("enc_mac_key", Response)),
+	    EncMAC = base64:decode(?GV("enc_mac_key", Response)),
 
-    ZZ = btwoc(crypto:dh_compute_key(ServPublic, Private, [MP,MG])),
+	    ZZ = btwoc(crypto:dh_compute_key(ServPublic, Private, [MP,MG])),
 
-    %?DBG({zz, ZZ}),
+	    %?DBG({zz, ZZ}),
 
-    MAC = crypto:exor(crypto:sha(ZZ), EncMAC),
+	    MAC = crypto:exor(crypto:sha(ZZ), EncMAC),
 
-    #openid_assoc{handle=Handle, 
-		  created=now(), 
-		  expiresIn=ExpiresIn, 
-		  servPublic=ServPublic,
-		  mac=MAC}.
+	    #openid_assoc{handle=Handle, 
+		created=now(), 
+		expiresIn=ExpiresIn, 
+		servPublic=ServPublic,
+		mac=MAC};
 
- 
+	E -> {error, E}
+    end.
+
+
 roll(N) when is_binary(N) ->
     <<_Size:32, Bin/binary>> = N,
     btwoc(Bin).
@@ -195,21 +249,21 @@ unroll(Bin) when is_binary(Bin) ->
 %% ------------------------------------------------------------
 
 authentication_url(AuthReq, ReturnTo, Realm) ->
-    
+
     Assoc = AuthReq#openid_authreq.assoc,
-    
+
     IDBits = case AuthReq#openid_authreq.claimedID of
-                 none -> [];
-                 _ -> [{"openid.claimed_id", AuthReq#openid_authreq.claimedID},
-                       {"openid.identity", AuthReq#openid_authreq.localID}]
-             end,
+	none -> [];
+	_ -> [{"openid.claimed_id", AuthReq#openid_authreq.claimedID},
+		{"openid.identity", AuthReq#openid_authreq.localID}]
+    end,
 
     Params = [{"openid.ns", "http://specs.openid.net/auth/2.0"},
-              {"openid.mode", "checkid_setup"},
-              {"openid.assoc_handle", Assoc#openid_assoc.handle},
-              {"openid.return_to", ReturnTo},
-              {"openid.realm", Realm}] ++ IDBits,
-    
+	{"openid.mode", "checkid_setup"},
+	{"openid.assoc_handle", Assoc#openid_assoc.handle},
+	{"openid.return_to", ReturnTo},
+	{"openid.realm", Realm}] ++ IDBits,
+
     QueryString = openid_pm:uri_encode(Params),
 
     [URL|_] = AuthReq#openid_authreq.opURLs,
