@@ -7,9 +7,9 @@ Quickstart workflow:
 0> {ok, _Pid} = openid:start_link([]).
 
 [ one user requested authentification over OpenID. 
-  He/she passed an openid URL into form on you site ]
+  He/she passed an openid URL into form on you site. ]
 
-1> {ok, AutReq} = openid:prepare(SessionId, UserUrl).
+1> {ok, AuthReq} = openid:prepare(SessionId, UserUrl).
 	* SessionId -	Some string. For example "foobar".
 	* UserUrl   -	The data, provided by user. Example values:
 			"http://john.myopeid.org/"
@@ -56,6 +56,7 @@ Quickstart workflow:
 			Just store it on your users db as some user_id. This realm helps 
 			your's webserver to identity one user in future log-in attempts.
 
-Tutorial, written by original author:
-http://taizilla.wordpress.com/2010/07/21/erl_openid-an-erlang-openid-2-0-client/
-Code sample (for mochiweb?): http://paste.pocoo.org/show/235385/
+
+External Links:
+http://taizilla.wordpress.com/2010/07/21/erl_openid-an-erlang-openid-2-0-client/ - Tutorial, written by original author.
+http://paste.pocoo.org/show/235385/ - code sample (for mochiweb?).
