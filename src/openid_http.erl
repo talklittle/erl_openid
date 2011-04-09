@@ -1,5 +1,5 @@
 -module(openid_http).
--include("../ibrowse/src/ibrowse.hrl").
+-include("deps/ibrowse/src/ibrowse.hrl").
 -export([get/1, post/3]).
 
 -define(MAX_REDIRECTS, 5). %% too generous?
