@@ -1,5 +1,61 @@
 Erlang OpenID client (and maybe server, sometime).
 
-Quick tutorial: http://taizilla.wordpress.com/2010/07/21/erl_openid-an-erlang-openid-2-0-client/
+Quickstart workflow: 
 
-Proper docs to follow when someone helps me write them ;)
+[ your website starts ]
+
+0> {ok, _Pid} = openid:start_link([]).
+
+[ one user requested authentification over OpenID. 
+  He/she passed an openid URL into form on you site ]
+
+1> {ok, AutReq} = openid:prepare(SessionId, UserUrl).
+	* SessionId -	Some string. For example "foobar".
+	* UserUrl   -	The data, provided by user. Example values:
+			"http://john.myopeid.org/"
+			"https://www.google.com/o8/id"
+			As you can, UserUrl may NOT contain any user name at all.
+			Note: this URL is not unique for each user. 
+			For example, all google users will provide equal URLs (look at URL above).
+	* AuthReq   -	Just a returned context. Used for step 2.
+
+2> Url = openid:authentication_url(AuthReq, ReturnTo, Realm).
+	* AuthReq   -	See step 1.
+	* ReturnTo  -	URL on YOUR server. User will be redirected here after authentification.
+			Resource on this url should be able to handle GET and POST requests and 
+			ready to pass all arguments into step 4. Example value:
+			"http://yoursite.com/login/openid/verify"
+
+	* Realm	    -	Will be displayed to user by remote OpenID server. 
+			Many openid servers wants to see something like "http://yoursite.com/" 
+			here and they will display message to user like "Site "yoursite.com" 
+			wants to authentificate YOU. Continue?" to user. 
+			This value must be immutable for ages. If it changes, user will be
+			to reauthentificated again by remote server.
+
+	* Url	    -	URL string for redirection the user. Just send user to this url and wait 
+			for him on ReturnUrl.
+
+3> [ user is redirected from your server to remote openID server ]
+
+4> [ user returned to http://yoursite.com/login/openid/verify?openid.data=some_data&openid... ]
+
+5> {ok, OpenId} = verify(SessionId, ReturnTo, HttpParams).
+	* SessionId -	See step 1. Same value expected.
+	* ReturnTo  -	See step 2. Same value expected for .
+	* HttpParams-	Proplist [{string, string}]. It contains returned GET/POST parameters. 
+			In zotonic:	z_context:get_q_all_noz(Context).
+			In webmachine:	wrq:req_qs(ReqData).
+			Constructed from URL on step 4 by mochiweb/webmachine/etc.
+	* OpenId    -	Unique OpenID realm of user. String. Sometimes MAY be equal 
+			to UserUrl (see step 1). Example values:
+			"http://openid.myopenid.org/user/john/yadis/"
+			"https://www.google.com/o8/ud/?x=agrg43gwsgsegergerg".
+			Do not try to parse it, really. This Realm URL may NOT contain any 
+			username. This realm is unique for every user.
+			Just store it on your users db as some user_id. This realm helps 
+			your's webserver to identity one user in future log-in attempts.
+
+Tutorial, written by original author:
+http://taizilla.wordpress.com/2010/07/21/erl_openid-an-erlang-openid-2-0-client/
+Code sample (for mochiweb?): http://paste.pocoo.org/show/235385/
