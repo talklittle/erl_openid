@@ -192,9 +192,13 @@ pend_login(UUID, AuthReq, Assoc, State) ->
 %%--------------------------------------------------------------------
 
 verify_return(UUID, ReturnTo, Fields, State) ->
-    case check_return_id(ReturnTo, Fields) of
-        true -> verify_discovered(UUID, Fields, State);
-        false -> {error, "Mismatched return URL"}
+    case check_cancel(Fields) of
+        true -> {error, "Cancelled"};
+        false ->
+            case check_return_id(ReturnTo, Fields) of
+                true -> verify_discovered(UUID, Fields, State);
+                false -> {error, "Mismatched return URL"}
+            end
     end.
 
 verify_discovered(UUID, Fields, State) ->
@@ -279,3 +283,6 @@ check_return_id(ReturnTo, Fields) ->
     GivenReturn = ?GV("openid.return_to", Fields),
     % XXX Todo -- do this properly, for people who put fancy stuff in return URLs
     ReturnTo == GivenReturn.
+
+check_cancel(Fields) ->
+    "cancel" == ?GV("openid.mode", Fields).
