@@ -10,7 +10,7 @@
 -export([
 	start/2, stop/1, init/1, start_link/1,
 	prepare/2, prepare/3, verify/3,
-	discover/1, associate/1, authentication_url/3
+	discover/1, associate/1, authentication_url/3, authentication_url/4
     ]).
 
 -behaviour(application).
@@ -249,6 +249,9 @@ unroll(Bin) when is_binary(Bin) ->
 %% ------------------------------------------------------------
 
 authentication_url(AuthReq, ReturnTo, Realm) ->
+    authentication_url(AuthReq, ReturnTo, Realm, []).
+
+authentication_url(AuthReq, ReturnTo, Realm, ExtParams) ->
 
     Assoc = AuthReq#openid_authreq.assoc,
 
@@ -262,7 +265,7 @@ authentication_url(AuthReq, ReturnTo, Realm) ->
 	{"openid.mode", "checkid_setup"},
 	{"openid.assoc_handle", Assoc#openid_assoc.handle},
 	{"openid.return_to", ReturnTo},
-	{"openid.realm", Realm}] ++ IDBits,
+	{"openid.realm", Realm}] ++ IDBits ++ ExtParams,
 
     QueryString = openid_pm:uri_encode(Params),
 
