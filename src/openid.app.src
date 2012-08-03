@@ -4,4 +4,13 @@
   {vsn, "0.0.1"},
   {registered,[]},
   {applications,[kernel, stdlib, crypto, ibrowse]},
+  {modules, [
+    openid,
+    openid_srv,
+    openid_http,
+    openid_pm,
+    openid_utils,
+    yadis
+  ]},
+  {mod, {openid, []}},
   {env,[]}]}.
