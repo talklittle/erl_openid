@@ -1,7 +1,7 @@
 -module(openid_test).
 -compile([export_all]).
 -include_lib("eunit/include/eunit.hrl").
--include("openid.hrl").
+-include_lib("openid/include/openid.hrl").
 
 setup() ->
     [ application:start(X) || X <- [ crypto, ssl, sasl, inets, ibrowse ] ].

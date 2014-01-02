@@ -9,7 +9,7 @@
 
 -behaviour(gen_server).
 
--include("openid.hrl").
+-include_lib("openid/include/openid.hrl").
 
 %% API
 -export([start_link/0, start_link/1, stop/0, stop/1]).

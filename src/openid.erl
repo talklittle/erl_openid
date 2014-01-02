@@ -16,7 +16,7 @@
 -behaviour(application).
 -behaviour(supervisor).
 
--include("openid.hrl").
+-include_lib("openid/include/openid.hrl").
 
 %% ------------------------------------------------------------
 %% Application
@@ -58,7 +58,7 @@ prepare(UUID, Identifier) ->
 prepare(UUID, Identifier, Cache) ->
     gen_server:call({global, openid_srv}, {prepare, UUID, Identifier, Cache}).
 
- 
+
 verify(UUID, ReturnTo, Fields) ->
     gen_server:call({global, openid_srv}, {verify, UUID, ReturnTo, Fields}).
 

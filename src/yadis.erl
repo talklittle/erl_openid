@@ -9,7 +9,7 @@
 
 -export([retrieve/1]).
 
--include("openid.hrl").
+-include_lib("openid/include/openid.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
 
 -define(HTTP_HEADERS, [{"Accept", "application/xrds+xml"},

@@ -12,7 +12,7 @@
 -export([uri_encode/1, uri_decode/1]).
 -export([normalize_id/1, normalize_http/1]).
 
--include("openid.hrl").
+-include_lib("openid/include/openid.hrl").
 -include_lib("ibrowse/include/ibrowse.hrl").
 
 get_tags(Content, Tag) ->
